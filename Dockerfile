@@ -5,7 +5,9 @@ WORKDIR /app
 # プロジェクトのファイルをすべてコピー
 COPY . .
 
-# ★ここを追加：gradlew に実行権限（実行許可）を付与する
+# ★最終兵器：Windows特有の改行コード(CRLF)をLinux用(LF)に変換し、実行権限を付与する
+RUN apt-get update && apt-get install -y dos2unix
+RUN dos2unix ./gradlew
 RUN chmod +x ./gradlew
 
 # Gradleを使ってアプリケーションをビルド (jarファイルを作成)
@@ -23,4 +25,3 @@ EXPOSE 8080
 
 # アプリケーションの起動
 ENTRYPOINT ["java", "-jar", "app.jar"]
-```
