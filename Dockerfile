@@ -5,6 +5,9 @@ WORKDIR /app
 # プロジェクトのファイルをすべてコピー
 COPY . .
 
+# ★ここを追加：gradlew に実行権限（実行許可）を付与する
+RUN chmod +x ./gradlew
+
 # Gradleを使ってアプリケーションをビルド (jarファイルを作成)
 RUN ./gradlew bootJar --no-daemon
 
@@ -20,3 +23,4 @@ EXPOSE 8080
 
 # アプリケーションの起動
 ENTRYPOINT ["java", "-jar", "app.jar"]
+```
