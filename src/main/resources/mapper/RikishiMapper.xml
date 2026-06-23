@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sumo.sumo_analyzer.mapper.RikishiMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO rikishi (shikona, heya, height, weight)
+        VALUES (#{shikona}, #{heya}, #{height}, #{weight})
+    </insert>
+
+    <select id="findAll" resultType="com.sumo.sumo_analyzer.entity.Rikishi">
+        SELECT * FROM rikishi ORDER BY id ASC
+    </select>
+
+    <select id="countByShikona" resultType="int">
+        SELECT COUNT(*)
+        FROM rikishi
+        WHERE shikona = #{shikona}
+    </select>
+
+    <select id="findIdByShikona" resultType="java.lang.Integer">
+        SELECT id
+        FROM rikishi
+        WHERE shikona LIKE CONCAT(#{shikona}::varchar, '%')
+        LIMIT 1
+    </select>
+
+    <select id="findById" resultType="com.sumo.sumo_analyzer.entity.Rikishi">
+        SELECT * FROM rikishi
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByCondition" resultType="com.sumo.sumo_analyzer.entity.Rikishi">
+        SELECT * FROM rikishi
+        <where>
+            <if test="heya != null and heya != ''">
+                AND heya = #{heya}
+            </if>
+        </where>
+        ORDER BY id ASC
+    </select>
+
+    <select id="findDistinctHeya" resultType="string">
+        SELECT DISTINCT heya
+        FROM rikishi
+        WHERE heya IS NOT NULL AND heya != ''
+        ORDER BY heya ASC
+    </select>
+</mapper>

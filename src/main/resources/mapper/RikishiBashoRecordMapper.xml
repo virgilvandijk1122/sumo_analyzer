@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sumo.sumo_analyzer.mapper.RikishiBashoRecordMapper">
+
+    <select id="countByRikishiIdAndBasho" resultType="int">
+        SELECT COUNT(*)
+        FROM rikishi_basho_record
+        WHERE rikishi_id = #{rikishiId} AND basho = #{basho}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO rikishi_basho_record (
+        rikishi_id, basho, banzuke, banzuke_rank,
+        wins, losses, absences, is_kadoban, is_kyujo_ake
+        ) VALUES (
+        #{rikishiId}, #{basho}, #{banzuke}, #{banzukeRank},
+        #{wins}, #{losses}, #{absences}, #{isKadoban}, #{isKyujoAke}
+        )
+    </insert>
+
+    <select id="findByRikishiId" resultType="com.sumo.sumo_analyzer.entity.RikishiBashoRecord">
+        SELECT * FROM rikishi_basho_record
+        WHERE rikishi_id = #{rikishiId}
+        ORDER BY basho DESC
+    </select>
+</mapper>

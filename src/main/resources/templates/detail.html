@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${rikishi.shikona} + ' - 詳細データ'">力士詳細</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 1000px; margin: 0 auto; }
+        .profile-box { background-color: #f9f9f9; border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 10px; margin-bottom: 30px; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+        th { background-color: #eaeaea; }
+        .back-btn { display: inline-block; margin-bottom: 20px; padding: 8px 16px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; }
+        .back-btn:hover { background-color: #0056b3; }
+
+        .dashboard-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            margin-bottom: 30px;
+        }
+        .chart-box {
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        .rival-link { color: #007bff; text-decoration: none; font-weight: bold; }
+        .rival-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<a href="/list" class="back-btn">← 一覧に戻る</a>
+
+<div class="dashboard-container">
+    <div class="profile-box" style="flex: 1; margin-bottom: 0;">
+        <h1 th:text="${rikishi.shikona}">四股名</h1>
+        <p><strong>所属部屋：</strong> <span th:text="${rikishi.heya}">部屋</span></p>
+        <p>
+            <strong>身長：</strong> <span th:text="${rikishi.height}">180.0</span> cm /
+            <strong>体重：</strong> <span th:text="${rikishi.weight}">120.0</span> kg
+        </p>
+    </div>
+
+    <div class="chart-box" style="width: 320px;">
+        <canvas id="resultChart"></canvas>
+    </div>
+
+    <div class="chart-box" style="width: 320px;">
+        <canvas id="kimariteChart"></canvas>
+    </div>
+</div>
+
+<h2>戦闘力（Eloレーティング）の推移</h2>
+<div class="chart-box" style="width: 100%; margin-bottom: 30px;">
+    <p th:if="${#lists.isEmpty(eloHistory)}">データがありません</p>
+    <canvas id="eloChart" th:unless="${#lists.isEmpty(eloHistory)}"></canvas>
+</div>
+
+<h2>天敵・ライバル力士との通算成績 (TOP10)</h2>
+<p th:if="${#lists.isEmpty(rivalStats)}">対戦データがまだありません。</p>
+<table th:unless="${#lists.isEmpty(rivalStats)}">
+    <thead>
+    <tr>
+        <th>対戦相手</th>
+        <th>所属部屋</th>
+        <th>対戦成績</th>
+        <th>勝率</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="rival : ${rivalStats}">
+        <td>
+            <a th:href="@{/detail/{id}(id=${rival.opponentId})}" th:text="${rival.opponentShikona}" class="rival-link">対戦相手</a>
+        </td>
+        <td th:text="${rival.opponentHeya}">友綱部屋</td>
+        <td th:text="${rival.wins} + ' 勝 ' + ${rival.losses} + ' 敗'">0 勝 0 敗</td>
+        <td th:text="${rival.wins + rival.losses > 0} ? ${#numbers.formatPercent((rival.wins * 1.0) / (rival.wins + rival.losses), 1, 1)} : '0.0%'">0.0%</td>
+    </tr>
+    </tbody>
+</table>
+
+<h2>直近の成績</h2>
+<p th:if="${#lists.isEmpty(records)}">成績データがまだありません。</p>
+<table th:unless="${#lists.isEmpty(records)}">
+    <thead>
+    <tr>
+        <th>開催場所</th>
+        <th>番付</th>
+        <th>勝</th>
+        <th>負</th>
+        <th>休</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="record : ${records}">
+        <td th:text="${#strings.substring(record.basho, 0, 4)} + '年' + ${#strings.substring(record.basho, 4, 6)} + '月'">202605</td>
+        <td th:text="${record.banzuke}">東前頭3</td>
+        <td th:text="${record.wins}">8</td>
+        <td th:text="${record.losses}">7</td>
+        <td th:text="${record.absences}">0</td>
+    </tr>
+    </tbody>
+</table>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script th:inline="javascript">
+    // 1. 勝敗割合グラフ
+    const wins = /*[[${totalWins}]]*/ 0;
+    const losses = /*[[${totalLosses}]]*/ 0;
+    const absences = /*[[${totalAbsences}]]*/ 0;
+
+    if (wins > 0 || losses > 0 || absences > 0) {
+        const ctx1 = document.getElementById('resultChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'pie',
+            data: {
+                labels: ['勝', '負', '休'],
+                datasets: [{
+                    data: [wins, losses, absences],
+                    backgroundColor: ['#36A2EB', '#FF6384', '#FFCE56']
+                }]
+            },
+            options: { responsive: true, plugins: { title: { display: true, text: '通算成績の割合' } } }
+        });
+    }
+
+    // 2. 得意技グラフ
+    const statsList = /*[[${kimariteStats}]]*/ [];
+    if (statsList && statsList.length > 0) {
+        const kimariteLabels = statsList.map(item => item.kimarite);
+        const kimariteCounts = statsList.map(item => item.count);
+
+        const ctx2 = document.getElementById('kimariteChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: kimariteLabels,
+                datasets: [{
+                    data: kimariteCounts,
+                    backgroundColor: ['#FF9F40', '#4BC0C0', '#9966FF', '#C9CBCF', '#FFCD56']
+                }]
+            },
+            options: { responsive: true, plugins: { title: { display: true, text: '得意な決まり手 (TOP5)' } } }
+        });
+    }
+
+    // 3. ★戦闘力（Eloレーティング）の推移グラフ
+    const eloList = /*[[${eloHistory}]]*/ [];
+    if (eloList && eloList.length > 0) {
+        // X軸：〇〇年〇月場所 〇日目
+        const eloLabels = eloList.map(item => item.basho.substring(0,4) + '年' + item.basho.substring(4,6) + '月 ' + item.day + '日目');
+        // Y軸：Eloレーティングの値
+        const eloData = eloList.map(item => item.elo);
+
+        const ctx3 = document.getElementById('eloChart').getContext('2d');
+        new Chart(ctx3, {
+            type: 'line',
+            data: {
+                labels: eloLabels,
+                datasets: [{
+                    label: '戦闘力 (Elo Rating)',
+                    data: eloData,
+                    borderColor: '#E74C3C',        // 線の色（赤系）
+                    backgroundColor: 'rgba(231, 76, 60, 0.2)', // グラフの下を薄く塗りつぶす
+                    borderWidth: 2,
+                    pointRadius: 0,                // 点が多すぎるので丸いポインターは消す
+                    fill: true,                    // 塗りつぶしON
+                    tension: 0.2                   // 線を少し滑らかにする
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                scales: {
+                    x: {
+                        ticks: { maxTicksLimit: 20 } // X軸のラベルが多すぎないように間引く
+                    }
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>

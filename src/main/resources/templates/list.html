@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>力士データ一覧</title>
+    <style>
+        /* 簡単な表のデザイン */
+        table { border-collapse: collapse; width: 100%; max-width: 800px; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+        th { background-color: #f4f4f4; }
+    </style>
+</head>
+<body>
+
+<h1>大相撲 力士分析ツール</h1>
+<h2>登録済み力士一覧</h2>
+
+<div style="margin-bottom: 20px; background-color: #f9f9f9; padding: 15px; border: 1px solid #ccc; border-radius: 4px;">
+    <form th:action="@{/list}" method="get" style="display: flex; gap: 15px; align-items: center;">
+        <label style="font-weight: bold;">部屋で絞り込み:</label>
+        <select name="heya" style="padding: 6px 12px; font-size: 14px;">
+            <option value="">-- 全ての部屋 --</option>
+            <option th:each="h : ${heyaList}"
+                    th:value="${h}"
+                    th:text="${h}"
+                    th:selected="${h == selectedHeya}">部屋名</option>
+        </select>
+        <button type="submit" style="padding: 6px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">検索</button>
+        <a href="/list" style="padding: 6px 16px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px; font-size: 14px; text-align: center;">クリア</a>
+    </form>
+</div>
+
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th> 四股名 </th>
+        <th> 所属部屋 </th>
+        <th> 身長 (cm) </th>
+        <th> 体重 (kg) </th>
+        <th> BMI </th> </tr>
+    </thead>
+    <tbody>
+    <tr th:each="rikishi : ${rikishiList}">
+        <td th:text="${rikishi.id}">1</td>
+        <td>
+            <a th:href="@{/detail/{id}(id=${rikishi.id})}" th:text="${rikishi.shikona}">四股名ダミー</a>
+        </td>
+        <td th:text="${rikishi.heya}"> 部屋ダミー </td>
+        <td th:text="${rikishi.height}">180</td>
+        <td th:text="${rikishi.weight}">120</td>
+        <td th:text="${rikishi.bmi}">25.5</td> </tr>
+    </tbody>
+</table>
+
+</body>
+</html>

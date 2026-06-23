@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sumo.sumo_analyzer.mapper.TorikumiResultMapper">
+
+    <insert id="insert">
+        INSERT INTO torikumi_result (
+        basho, day, east_rikishi_id, west_rikishi_id, winner_rikishi_id, kimarite
+        ) VALUES (
+        #{basho}, #{day}, #{eastRikishiId}, #{westRikishiId}, #{winnerRikishiId}, #{kimarite}
+        )
+    </insert>
+
+    <select id="countByBashoAndDayAndRikishi" resultType="int">
+        SELECT COUNT(*) FROM torikumi_result
+        WHERE basho = #{basho} AND day = #{day} AND east_rikishi_id = #{eastRikishiId} AND west_rikishi_id = #{westRikishiId}
+    </select>
+
+    <select id="findLatestBasho" resultType="string">
+        SELECT MAX(basho) FROM torikumi_result
+    </select>
+
+    <select id="findWinningKimariteStats" resultType="map">
+        SELECT kimarite, COUNT(*) as count FROM torikumi_result
+        WHERE winner_rikishi_id = #{rikishiId} AND kimarite IS NOT NULL AND kimarite != ''
+        GROUP BY kimarite ORDER BY count DESC LIMIT 5
+    </select>
+
+    <select id="findRivalStats" resultType="map">
+        SELECT
+        t.opponent_id as "opponentId", r.shikona as "opponentShikona", r.heya as "opponentHeya",
+        COUNT(CASE WHEN t.winner_rikishi_id = #{rikishiId} THEN 1 END) as "wins",
+        COUNT(CASE WHEN t.winner_rikishi_id = t.opponent_id THEN 1 END) as "losses"
+        FROM (
+        SELECT west_rikishi_id as opponent_id, winner_rikishi_id FROM torikumi_result WHERE east_rikishi_id = #{rikishiId}
+        UNION ALL
+        SELECT east_rikishi_id as opponent_id, winner_rikishi_id FROM torikumi_result WHERE west_rikishi_id = #{rikishiId}
+        ) t
+        JOIN rikishi r ON t.opponent_id = r.id
+        GROUP BY t.opponent_id, r.shikona, r.heya
+        ORDER BY "losses" DESC, "wins" ASC LIMIT 10
+    </select>
+
+    <select id="findAllOrderByChronological" resultType="com.sumo.sumo_analyzer.entity.TorikumiResult">
+        SELECT * FROM torikumi_result
+        ORDER BY basho ASC, day ASC, id ASC
+    </select>
+
+    <update id="updateElo">
+        UPDATE torikumi_result
+        SET east_elo_before = #{eastEloBefore},
+        west_elo_before = #{westEloBefore}
+        WHERE id = #{id}
+    </update>
+
+    <select id="findEloHistory" resultType="map">
+        SELECT
+        basho,
+        day,
+        CASE
+        WHEN east_rikishi_id = #{rikishiId} THEN east_elo_before
+        ELSE west_elo_before
+        END as elo
+        FROM torikumi_result
+        WHERE east_rikishi_id = #{rikishiId} OR west_rikishi_id = #{rikishiId}
+        ORDER BY basho ASC, day ASC, id ASC
+    </select>
+    
+</mapper>
